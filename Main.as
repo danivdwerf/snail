@@ -25,6 +25,7 @@
 		
 		private var spawner:Timer=new Timer(4000,1);
 		private var failTimer:Timer=new Timer(1000,1);
+		private var endScreenTimer:Timer=new Timer(2000,1);
 		
 		private var random:int=5+Math.round(Math.random()*10);
 		private var amountOfSnails:int;
@@ -39,14 +40,30 @@
 		{
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 			stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
+			
 			stage.addEventListener(Event.ENTER_FRAME, Update);
+			
 			failTimer.addEventListener(TimerEvent.TIMER_COMPLETE, fail);
 			spawner.addEventListener(TimerEvent.TIMER_COMPLETE, spawnSnail);
+			endScreenTimer.addEventListener(TimerEvent.TIMER_COMPLETE, restartGame);
+		}
+		
+		private function removeListeners():void
+		{
+			stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyUp);
+			
+			stage.removeEventListener(Event.ENTER_FRAME, Update);
+			
+			failTimer.removeEventListener(TimerEvent.TIMER_COMPLETE, fail);
+			spawner.removeEventListener(TimerEvent.TIMER_COMPLETE, spawnSnail);
+			endScreenTimer.removeEventListener(TimerEvent.TIMER_COMPLETE, restartGame);
 		}
 
 		private function buildIntro():void
 		{
 			addChild(startScreen);
+			intro=true;
 		}
 		
 		private function destroyIntro():void
@@ -58,6 +75,7 @@
 		private function buildGame():void
 		{
 			spawner.start();
+			fistOnScreen=false;
 			game=true;
 		}
 		
@@ -75,6 +93,22 @@
 		private function buildOutro():void
 		{
 			addChild(endScreen);
+			endScreenTimer.start();
+		}
+
+		private function destroyOutro():void
+		{
+			removeChild(endScreen);
+			endScreenTimer.stop();
+			endScreenTimer.reset();
+		}
+		
+		private function restartGame(te:TimerEvent):void
+		{
+			destroyOutro();
+			removeListeners();
+			addListeners();
+			buildIntro();
 		}
 		
 		private function spawnSnail(te:TimerEvent):void
@@ -110,17 +144,17 @@
 		}
 		
 		private function onKeyUp(k:KeyboardEvent):void
-		{
-			if(k.keyCode==32&&game==true&&fistOnScreen==true)
-			{
-				removeChild(fist);
-				fistOnScreen=false;
-			}
-			
+		{	
 			if(k.keyCode==32&&intro==true)
 			{
 				destroyIntro();
 				buildGame();
+			}
+			
+			if(k.keyCode==32&&game==true&&fistOnScreen==true)
+			{
+				removeChild(fist);
+				fistOnScreen=false;
 			}
 		}
 	}
