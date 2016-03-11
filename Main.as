@@ -47,19 +47,20 @@
 		private var squish:Sound=new Squish();
 		private var channel:SoundChannel=new SoundChannel();
 		
-		private var intro:Boolean=true;
-		private var game:Boolean=false;
-		private var outro:Boolean=false;
 		private var fistOnScreen:Boolean=false;
 		private var snailsOnScreen:Boolean=false;
 		
 		private var snails:Array=[];
 		private var bloods:Array=[];
 		
+		private var gameState:String;
+		private static const INTRO:String="intro";
+		private static const INFO:String="info";
+		private static const GAME:String="game";
+		private static const OUTRO:String="outro";
+		
 		private var spawner:Timer=new Timer(4000,1);
-		private var infoTimer:Timer=new Timer(7000,1);
 		private var failTimer:Timer=new Timer(1000,1);
-		private var endScreenWin:Timer=new Timer(30000,1);
 		private var endScreenLose:Timer=new Timer(2000,1);
 		
 		private var random:int=10+Math.ceil(Math.random()*15);
@@ -90,7 +91,6 @@
 			stage.addEventListener(Event.ENTER_FRAME, Update);
 			
 			failTimer.addEventListener(TimerEvent.TIMER_COMPLETE, fail);
-			infoTimer.addEventListener(TimerEvent.TIMER_COMPLETE, deleteInfo);
 			spawner.addEventListener(TimerEvent.TIMER_COMPLETE, spawnSnail);
 			endScreenLose.addEventListener(TimerEvent.TIMER_COMPLETE, restartLoseGame);
 		}
@@ -110,28 +110,25 @@
 		private function buildIntro():void
 		{
 			addChild(startScreen);
-			intro=true;
+			gameState = Main.INTRO;
 		}
 		
 		private function destroyIntro():void
 		{
 			removeChild(startScreen);  
-			intro=false;
 			buildInfo();
 		}
 		
 		private function buildInfo():void
 		{
-			infoTimer.start();
 			addChild(instructions);
+			gameState = Main.INFO;
 		}
 		
-		private function deleteInfo(te:TimerEvent):void
+		private function deleteInfo():void
 		{
 			removeChild(instructions);
 			buildGame();
-			infoTimer.stop();
-			infoTimer.reset();
 		}
 		
 		private function buildGame():void
@@ -141,7 +138,7 @@
 			addChild(scoreText);
 			scoreText.x= stage.width/2;
 			fistOnScreen=false;
-			game=true;
+			gameState = Main.GAME;
 		}
 		
 		private function destroyGame():void
@@ -202,16 +199,12 @@
 		
 		private function buildOutro():void
 		{
-			game=false;
-			outro=true;
 			endScreenLose.start();
+			gameState = Main.OUTRO;
 		}
 		
 		private function buildWinOutro():void
 		{
-			game=false;
-			outro=true
-			
 			netConnect.connect(null);
 			netStream=new NetStream(netConnect);
 			netStream.addEventListener(AsyncErrorEvent.ASYNC_ERROR, async);
@@ -223,6 +216,7 @@
 			video.width=1280;
 			video.height=720;
 			addChild(video);
+			gameState = Main.OUTRO;
 		}
 		private function netStatus(e:NetStatusEvent):void
 		{
@@ -233,15 +227,11 @@
 		}
 		private function destroyWinOutro():void
 		{
-			outro=false;
 			removeChild(video);
-			endScreenWin.stop();
-			endScreenWin.reset();
 		}
 		
 		private function destroyLoseOutro():void
 		{
-			outro=false;
 			endScreenLose.stop();
 			endScreenLose.reset();
 		}
@@ -250,7 +240,6 @@
 		{
 			spawner.stop();
 			spawner.reset();
-			game=false;
 			destroyWinOutro();
 			removeListeners();
 			addListeners();
@@ -261,7 +250,6 @@
 		{
 			spawner.stop();
 			spawner.reset();
-			game=false;
 			destroyLoseOutro();
 			removeListeners();
 			addListeners();
@@ -285,7 +273,7 @@
 			scoreText.setTextFormat(tf);
 			amountOfSnails=snails.length;
 			
-			if(amountOfSnails==0&&game==true)
+			if(amountOfSnails==0&&gameState == Main.GAME)
 			{
 				spawner.start();
 				snailsOnScreen=false;
@@ -338,7 +326,7 @@
 		
 		private function onKeyDown(k:KeyboardEvent):void
 		{
-			if(k.keyCode==32&&game==true&&fistOnScreen==false&&amountOfSnails>0)
+			if(k.keyCode==32&&gameState == Main.GAME&&fistOnScreen==false&&amountOfSnails>0)
 			{
 				addChild(fist);
 				channel=squish.play();
@@ -347,9 +335,18 @@
 				score++;
 			}
 			
-			if(k.keyCode==32&&game==true&&amountOfSnails<=0)
+			else if(k.keyCode==32&&gameState == Main.INTRO)
 			{
-				game=false;
+				destroyIntro();
+			}
+			
+			else if(k.keyCode==32&&gameState == Main.INFO)
+			{
+				deleteInfo();
+			}
+			
+			else if(k.keyCode==32&&gameState == Main.GAME&&amountOfSnails<=0)
+			{
 				addChild(fist);
 				channel=manScream.play();
 				spawner.stop();
@@ -360,12 +357,8 @@
 		
 		private function onKeyUp(k:KeyboardEvent):void
 		{	
-			if(k.keyCode==32&&intro==true)
-			{
-				destroyIntro();
-			}
 			
-			if(k.keyCode==32&&game==true&&fistOnScreen==true)
+			if(k.keyCode==32&&gameState == Main.GAME&&fistOnScreen==true)
 			{
 				removeChild(fist);
 				fistOnScreen=false;

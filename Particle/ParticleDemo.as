@@ -4,7 +4,7 @@
 		public class ParticleDemo extends MovieClip 
 	{
 		private var deleteMe:Timer=new Timer(1000,1);
-		public static const ENEMY_OUT_OF_SCREEN:String="enemy out of screen";				public function ParticleDemo() 
+		public static const ENEMY_OUT_OF_SCREEN:String="enemy out of screen";				public function ParticleDemo():void 
 		{
 			addEventListener(Event.ADDED_TO_STAGE, init);
 			deleteMe.addEventListener(TimerEvent.TIMER_COMPLETE, deleteBlood);		}
